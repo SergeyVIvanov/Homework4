@@ -21,12 +21,12 @@ static class Program
         Console.Write("Enter customer Id: ");
         while (!long.TryParse(Console.ReadLine(), out customerId)) ;
 
+        Console.WriteLine("Customer:");
         await ShowCustomerInfo(httpClient, customerId);
 
         customerId = await AddRandomCustomer(httpClient);
+        Console.WriteLine("New customer:");
         await ShowCustomerInfo(httpClient, customerId);
-
-        Console.ReadLine();
     }
 
     private static async Task<long> AddRandomCustomer(HttpClient httpClient)
@@ -54,7 +54,12 @@ static class Program
         try
         {
             response.EnsureSuccessStatusCode();
-            Console.WriteLine(await response.Content.ReadAsStringAsync());
+
+            var customer = await response.Content.ReadFromJsonAsync<Customer>();
+
+            Console.WriteLine($"    Id: {customer.Id}");
+            Console.WriteLine($"    Firstname: \"{customer.Firstname}\"");
+            Console.WriteLine($"    Lastname: \"{customer.Lastname}\"");
         }
         catch (Exception e)
         {
