@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace WebClient;
@@ -7,6 +8,9 @@ namespace WebClient;
 static class Program
 {
     private const string WebApiBaseAddress = "https://localhost:5001";
+
+    private static readonly string[] FirstNames = { "Тест", "Джон", "Санса", "Дейнерис", "Петир" };
+    private static readonly string[] LastNames = { "Тестов", "Сноу", "Старк", "Таргариен", "Бейлиш" };
 
     static async Task Main()
     {
@@ -17,15 +21,44 @@ static class Program
         Console.Write("Enter customer Id: ");
         while (!long.TryParse(Console.ReadLine(), out customerId)) ;
 
-        var response = await httpClient.GetAsync($"customers/{customerId}");
-        response.EnsureSuccessStatusCode();
-        Console.WriteLine(await response.Content.ReadAsStringAsync());
+        await ShowCustomerInfo(httpClient, customerId);
+
+        customerId = await AddRandomCustomer(httpClient);
+        await ShowCustomerInfo(httpClient, customerId);
 
         Console.ReadLine();
     }
 
-    private static CustomerCreateRequest RandomCustomer()
+    private static async Task<long> AddRandomCustomer(HttpClient httpClient)
     {
-        throw new NotImplementedException();
+        var customerRequest = CreateRandomCustomerRequest();
+
+        var response = await httpClient.PostAsJsonAsync("customers", customerRequest, default);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<long>();
+    }
+
+    private static CustomerCreateRequest CreateRandomCustomerRequest()
+    {
+        string GetRandomItem(string[] items)
+        {
+            return items[Random.Shared.Next(items.Length)];
+        }
+
+        return new CustomerCreateRequest(GetRandomItem(FirstNames), GetRandomItem(LastNames));
+    }
+
+    private static async Task ShowCustomerInfo(HttpClient httpClient, long customerId)
+    {
+        var response = await httpClient.GetAsync($"customers/{customerId}");
+        try
+        {
+            response.EnsureSuccessStatusCode();
+            Console.WriteLine(await response.Content.ReadAsStringAsync());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 }
